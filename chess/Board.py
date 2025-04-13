@@ -53,6 +53,7 @@ class Board:
         self.prevStart = None
         self.prevStop = None
         self.prevColor = None
+        self.moved_stack = []
 
 
 # ===================SHORT FUNCTIONS=======================
@@ -107,7 +108,6 @@ class Board:
                     return (row, col)
 
     def changeColor(self):
-        self.prevColor = self.colorMove
         if self.colorMove == ChessColor.WHITE: self.colorMove = ChessColor.BLACK
         elif self.colorMove == ChessColor.BLACK: self.colorMove = ChessColor.WHITE
 
@@ -214,12 +214,21 @@ class Board:
 #===================================
 
     def move(self, start, stop):
-        prevChessManStart = self[start]
-        prevChessManStop = self[stop]
+        piece_moved = self[start]
+        piece_captured = self[stop]
+        self.moved_stack.append({
+            "src": start,
+            "dst": stop,
+            "piece_moved": piece_moved,
+            "piece_captured": piece_captured,
+            "color": self.colorMove,
+            "unmoved": getattr(piece_moved, 'unmoved', None)
+        })
+
         isStriked = False
         isMoved = False
 
-        if start == stop: 
+        if start == stop:
             print('ERR1')
             return False
 
@@ -231,8 +240,6 @@ class Board:
         # Check if castling is
         if self.castling(start, stop):
             self.changeColor()
-            self.prevPositionStart = [start, prevChessManStart]
-            self.prevPositionStop = [stop, prevChessManStop]
             return True
 
         # Check is the move appropriate in general
@@ -288,8 +295,6 @@ class Board:
             # print(self.whiteStrikedList, self.whitePoints)
             # print(self.blackStrikedList, self.blackPoints)
             self.changeColor()
-            self.prevPositionStart = [start, prevChessManStart]
-            self.prevPositionStop = [stop, prevChessManStop]
             return True
 
         tmp = self[stop]
@@ -313,21 +318,27 @@ class Board:
             if self.isCheckMate(self.getkingPosition(self.colorMove)):
                 raise Exception("GAME OVER!!!!!!!!!!!!!!!!!")
         
-        self.prevPositionStart = [start, prevChessManStart]
-        self.prevPositionStop = [stop, prevChessManStop]
         return True
 
 
     def undoMove(self):
-        if self.prevPositionStart is None:
-            print("There is no previous move!")
+        if not self.moved_stack:
+            print("No moves to undo")
             return
 
-        self[self.prevPositionStart[0]] = self.prevPositionStart[1]
-        self[self.prevPositionStop[0]] = self.prevPositionStop[1]
-        self.colorMove = self.prevColor
-        if isinstance(self[self.prevPositionStart[0]], Pawn) or isinstance(self[self.prevPositionStart[0]], Rook) or isinstance(self[self.prevPositionStart[0]], King):
-            self[self.prevPositionStart[0]].unmoved = True
+        last_move = self.moved_stack.pop()
+
+        # Przywróć figury
+        self[last_move["src"]] = last_move["piece_moved"]
+        self[last_move["dst"]] = last_move["piece_captured"]
+
+        # Przywróć unmoved flagę jeśli była
+        if hasattr(self[last_move["src"]], "unmoved"):
+            self[last_move["src"]].unmoved = last_move["unmoved"]
+
+        # Przywróć kolor gracza
+        self.colorMove = last_move["color"]
+
         
         
 

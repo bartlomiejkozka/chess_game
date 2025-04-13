@@ -81,7 +81,8 @@ def main():
     # play(Board1, Board1.board)
     game = Render.Render(720 + 100, Board1)
     # game.render(Board1)
-    playFirstPossibleMoves(2, Board1, game, 0.5)
+    numPositions = playFirstPossibleMoves(2, Board1, game, 0.01)
+    print(f"Num positions: {numPositions}")
 
 
 if __name__ == "__main__":
