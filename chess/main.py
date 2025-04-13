@@ -1,5 +1,6 @@
 import string
 import Render
+import time
 
 import Board as b
 from Board import ChessColor
@@ -49,11 +50,39 @@ def play(board, boardList):
         printChessBoard(boardList)
 
 
+def playFirstPossibleMoves(depth, board, renderer=None, delay=0.5):
+    if depth == 0: 
+        return 1
+    
+    moves = board.legal_moves()
+    for move in moves:
+        print([move.src, move.dst], end=";")
+    numPosittions = 0
 
-Board1 = b.Board()
-#play(Board1, Board1.board)
+    for move in moves:
+        print(move.src, move.dst)
+        print(board.colorMove)
 
-game = Render.Render(720 + 100, Board1)
+        res = board.move(move.src, move.dst)
+        print(res)
 
-game.render(Board1)
+        renderer.render2(board)
+        time.sleep(delay)
 
+        numPosittions += playFirstPossibleMoves(depth-1, board, renderer, delay)
+        board.undoMove()
+
+
+    return numPosittions
+
+
+def main():
+    Board1 = b.Board()
+    # play(Board1, Board1.board)
+    game = Render.Render(720 + 100, Board1)
+    # game.render(Board1)
+    playFirstPossibleMoves(2, Board1, game, 0.5)
+
+
+if __name__ == "__main__":
+    main()

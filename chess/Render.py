@@ -211,3 +211,22 @@ class Render:
 
             pygame.display.flip()
             self.clock.tick(60)
+
+
+    def render2(self, board, movedPiece=None, moving=False, img=None, rect=None):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+
+        self.screen.fill((100, 100, 100))
+        self.drawPoints(board)
+        self.drawScoredPieces(board)
+        self.drawChessBoard(board)
+        self.drawChessPieces(board, movedPiece)
+
+        if moving and img and rect:
+            self.screen.blit(img, rect)
+
+        pygame.display.flip()
+        self.clock.tick(60)

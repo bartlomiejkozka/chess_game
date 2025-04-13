@@ -14,15 +14,27 @@ class Pawn:
         moves = []
         if start[0] == 1 and self.unmoved is True:
             moves.extend([(start[0] + 1, start[1]), (start[0] + 2, start[1])])
-            moves.extend([(start[0] + 1, start[1] + 1), (start[0] + 1, start[1] - 1)])
+            if start[1] + 1 < dim[0]:
+                moves.append((start[0] + 1, start[1] + 1))
+            if start[1] - 1 >= 0:
+                moves.append((start[0] + 1, start[1] - 1))
         elif start[0] == 6 and self.unmoved is True:
             moves.extend([(start[0] - 1, start[1]), (start[0] - 2, start[1])])
-            moves.extend([(start[0] - 1, start[1] + 1), (start[0] - 1, start[1] - 1)])
+            if start[1] + 1 < dim[0]:
+                moves.append((start[0] - 1, start[1] + 1))
+            if start[1] - 1 >= 0:
+                moves.append((start[0] - 1, start[1] - 1))
         elif self.color == self.board.upColor and start[0]+1 < dim[0]:
             moves.append((start[0] + 1, start[1]))
-            moves.extend([(start[0] + 1, start[1] + 1), (start[0] + 1, start[1] - 1)])
+            if start[1] + 1 < dim[0]:
+                moves.append((start[0] + 1, start[1] + 1))
+            if start[1] - 1 >= 0:
+                moves.append((start[0] + 1, start[1] - 1))
         elif self.color == self.board.downColor and start[0]-1 >= 0:
             moves.append((start[0] - 1, start[1]))
-            moves.extend([(start[0] - 1, start[1] + 1), (start[0] - 1, start[1] - 1)])
+            if start[1] + 1 < dim[0]:
+                moves.append((start[0] - 1, start[1] + 1))
+            if start[1] - 1 >= 0:
+                moves.append((start[0] - 1, start[1] - 1))
 
         return moves
