@@ -24,10 +24,20 @@ from Pawn import Pawn
 class Move:
     src: tuple[int, int]
     dst: tuple[int, int]
+    
     def __init__(self, src: tuple[int, int], dst: tuple[int, int]) -> None:
         self.src = src
         self.dst = dst
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Move):
+            return NotImplemented
+        return self.src == other.src and self.dst == other.dst
+
+    def __repr__(self):
+        return f"Move({self.src}, {self.dst})"
+    def __str__(self):
+        return f"Move({self.src}, {self.dst})"
 
 class Board:
     def __init__(self):
@@ -189,7 +199,6 @@ class Board:
             elif start[0] > stop[0]:
                 return not all([self.isEmptyCell((x, start[1])) for x in range(start[0]-1, stop[0], -1)])
 
-
         for dir in directionsList:
             match dir:
                 case ChessDirection.VERTICAL:
@@ -214,8 +223,61 @@ class Board:
 #===================================
 
     def move(self, start, stop):
+        if self.isCheckMate(self.getkingPosition(self.colorMove)):
+            raise Exception("GAME OVER!!!!!!!!!!!!!!!!!")
+
         piece_moved = self[start]
         piece_captured = self[stop]
+        isStriked = False
+        isMoved = False
+
+        if Move(start, stop) in self.legal_moves():
+            pass
+        else:
+            print(self.legal_moves())
+            print("Illegal move")
+            return False
+        # if start == stop:
+        #     print('ERR1')
+        #     return False
+
+        # # ChessMan color check
+        # if self[start].color != self.colorMove:
+        #     print('ERR2')
+        #     return False
+
+        # # Check if castling is
+        # if self.castling(start, stop):
+        #     self.changeColor()
+        #     return True
+
+        # # Check is the move appropriate in general
+        # if not (stop in self[start].validMove(start, self.dimension)):
+        #     # (self[start].validMove(start, self.dimension))
+        #     # print(self.upColor)
+        #     print('ERR3')
+        #     print(stop, start)
+        #     print(self[start].unmoved)
+        #     print(self[start].validMove(start, self.dimension))
+        #     return False
+
+        # # Check if is the obstacle on the way
+        # if self[start].isFlier is False and not isinstance(self[start], King):
+        #     if self.isObsctacleBetween(start, stop, self[start].directions):
+        #         print('ERR4')
+        #         return False
+
+        # # Check if is friend ChessMan on the stop cell
+        # if self.isCollision(stop, self[start].color):
+        #     print('ERR5')
+        #     return False
+
+        # # Check if the pawn has moved diagonal (want to strike)
+        # if isinstance(self[start], Pawn) and stop[1] != start[1]:
+        #     if self[stop] is None:
+        #         print('ERR6')
+        #         return False
+
         self.moved_stack.append({
             "src": start,
             "dst": stop,
@@ -224,50 +286,6 @@ class Board:
             "color": self.colorMove,
             "unmoved": getattr(piece_moved, 'unmoved', None)
         })
-
-        isStriked = False
-        isMoved = False
-
-        if start == stop:
-            print('ERR1')
-            return False
-
-        # ChessMan color check
-        if self[start].color != self.colorMove:
-            print('ERR2')
-            return False
-
-        # Check if castling is
-        if self.castling(start, stop):
-            self.changeColor()
-            return True
-
-        # Check is the move appropriate in general
-        if not (stop in self[start].validMove(start, self.dimension)):
-            # (self[start].validMove(start, self.dimension))
-            # print(self.upColor)
-            print('ERR3')
-            print(stop, start)
-            print(self[start].unmoved)
-            print(self[start].validMove(start, self.dimension))
-            return False
-
-        # Check if is the obstacle on the way
-        if self[start].isFlier is False and not isinstance(self[start], King):
-            if self.isObsctacleBetween(start, stop, self[start].directions):
-                print('ERR4')
-                return False
-
-        # Check if is friend ChessMan on the stop cell
-        if self.isCollision(stop, self[start].color):
-            print('ERR5')
-            return False
-
-        # Check if the pawn has moved diagonal (want to strike)
-        if isinstance(self[start], Pawn) and stop[1] != start[1]:
-            if self[stop] is None:
-                print('ERR6')
-                return False
 
         # Check if is strike
         if self.isStrike(stop, self[start].color):
@@ -278,46 +296,45 @@ class Board:
             isMoved = True
             self[start].unmoved = False
 
-        # Check the check
-        if self.isCheck(self.getkingPosition(self.colorMove))[0]:
-            tmp = self[stop]
-            tmp1 = self[start]
-            self[stop] = self[start]
-            self[start] = None
-            if self.isCheck(self.getkingPosition(self.colorMove))[0]:
-                self[stop] = tmp
-                self[start] = tmp1
-                if isStriked: self.deleteStirked(self.colorMove)
-                if isMoved: self[start].unmoved = True
-                print('ERR7')
-                return False
+        # # Check the check
+        # if self.isCheck(self.getkingPosition(self.colorMove))[0]:
+        #     tmp = self[stop]
+        #     tmp1 = self[start]
+        #     self[stop] = self[start]
+        #     self[start] = None
+        #     if self.isCheck(self.getkingPosition(self.colorMove))[0]:
+        #         self[stop] = tmp
+        #         self[start] = tmp1
+        #         if isStriked: self.deleteStirked(self.colorMove)
+        #         if isMoved: self[start].unmoved = True
+        #         print('ERR7')
+        #         return False
 
-            # print(self.whiteStrikedList, self.whitePoints)
-            # print(self.blackStrikedList, self.blackPoints)
-            self.changeColor()
-            return True
+        #     # print(self.whiteStrikedList, self.whitePoints)
+        #     # print(self.blackStrikedList, self.blackPoints)
+        #     self.changeColor()
+        #     return True
 
-        tmp = self[stop]
-        tmp1 = self[start]
-        self[stop] = self[start]
-        self[start] = None
-        if self.isCheck(self.getkingPosition(self.colorMove))[0]:
-            print("This move cause the CHECK!!!")
-            self[start] = tmp1
-            self[stop] = tmp
-            if isStriked: self.deleteStirked(self.colorMove)
-            if isMoved: self[start].unmoved = True
-            print('ERR8')
-            return False
+        # tmp = self[stop]
+        # tmp1 = self[start]
+        # self[stop] = self[start]
+        # self[start] = None
+        # if self.isCheck(self.getkingPosition(self.colorMove))[0]:
+        #     print("This move cause the CHECK!!!")
+        #     self[start] = tmp1
+        #     self[stop] = tmp
+        #     if isStriked: self.deleteStirked(self.colorMove)
+        #     if isMoved: self[start].unmoved = True
+        #     print('ERR8')
+        #     return False
 
         # print(self.whiteStrikedList, self.whitePoints)
         # print(self.blackStrikedList, self.blackPoints)
+
+        self[start] = None
+        self[stop] = piece_moved
         self.changeColor()
 
-        if self.isCheck(self.getkingPosition(self.colorMove))[0]:
-            if self.isCheckMate(self.getkingPosition(self.colorMove)):
-                raise Exception("GAME OVER!!!!!!!!!!!!!!!!!")
-        
         return True
 
 
@@ -432,6 +449,8 @@ class Board:
 
     # SZACH MAT
     def isCheckMate(self, kingPos):
+        if not self.isCheck(kingPos)[0]:
+            return False
         for position in self[kingPos].validMove(kingPos, self.dimension):
             if self.isCollision(position, self[kingPos].color):
                 continue
@@ -480,29 +499,31 @@ class Board:
 
 # ===================================
 # Returns a list of tuples with all possible legal moves
-    def legal_moves(self) -> list[tuple[int, int]]:
+    def legal_moves(self) -> list[Move]:
         moves: list[Move] = []
         for row in range(self.dimension[0]):
             for col in range(self.dimension[1]):
                 if self[(row, col)] is not None and self[(row, col)].color == self.colorMove:
                     for item in self[(row, col)].validMove((row, col), self.dimension):
-                        # (self[(row,col)], (row,col), item)
+                        # no need to check if the check is before the move
                         if self.isCheckAfterMove((row, col), item):
-                            continue           
-                        # KING CASTLING
+                            print('ED1')
+                            continue
+
                         if self.castling((row, col), item):
-                                    moves.append(Move((row, col), item))
-                        # PAWN STRIKE
+                            moves.append(Move((row, col), item))
+                        # PAWN CASES
                         elif isinstance(self[(row,col)], Pawn) and item[1] != col and self[item] != None and self[item].color != self.colorMove:
-                                moves.append(Move((row, col), item))
+                            moves.append(Move((row, col), item))
+                        elif isinstance(self[(row,col)], Pawn) and item[1] == col and not self.isCollision(item, self[(row,col)].color) and not self.isObsctacleBetween((row,col), item, self[(row,col)].directions):
+                            moves.append(Move((row, col), item))
                         # OBSTACLE BETWEEN and IS STRIKED CHESSMAN A FREIND
-                        elif self[(row,col)].isFlier is False and not isinstance(self[(row,col)], King) and not isinstance(self[(row,col)], Pawn):
+                        elif not self[(row,col)].isFlier and not isinstance(self[(row,col)], King) and not isinstance(self[(row,col)], Pawn):
                             if not self.isObsctacleBetween((row,col), item, self[(row,col)].directions) and not self.isCollision(item, self[(row,col)].color):
                                 moves.append(Move((row, col), item))
-                        elif isinstance(self[(row,col)], Pawn) and item[1] == col and not self.isCollision(item, self[(row,col)].color):
+                        elif isinstance((row, col), King) or isinstance(self[(row,col)], Knight) and not self.isCollision(item, self[(row,col)].color):
                             moves.append(Move((row, col), item))
                         else:
-                            if not self.isCollision(item, self[(row,col)].color) and not isinstance(self[(row,col)], Pawn):
-                                moves.append(Move((row, col), item))
+                            pass
         return moves
 
