@@ -1,5 +1,6 @@
 from enum import Enum
 import random as rd
+import string
 
 
 class ChessColor(Enum):
@@ -40,18 +41,40 @@ class Move:
         return f"Move({self.src}, {self.dst})"
 
 class Board:
-    def __init__(self):
+    castling: dict[ChessColor, list[tuple[int, int]]]
+    en_passant: dict[ChessColor, tuple[int, int]]
+    halfmove: int
+    fullmove: int
+    moved_stack: list[dict[str, object]]
+
+    def __init__(self, random_color_pos: bool = False, fen_notation: string = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") -> None:
         self.dimension = (8,8)
         self.board = [[None for _ in range(self.dimension[1])] for _ in range(self.dimension[0])]
 
-        if rd.randint(0,1) == 0:
-            self.upColor = ChessColor.WHITE
-            self.downColor = ChessColor.BLACK
+        if random_color_pos:
+            if rd.randint(0,1) == 0:
+                self.upColor = ChessColor.WHITE
+                self.downColor = ChessColor.BLACK
+            else:
+                self.upColor = ChessColor.BLACK
+                self.downColor = ChessColor.WHITE
         else:
             self.upColor = ChessColor.BLACK
             self.downColor = ChessColor.WHITE
 
-        self.fillBoard()
+        self.prevStart = None
+        self.prevStop = None
+        self.prevColor = None
+        self.moved_stack = []
+        self.castling = {
+            ChessColor.WHITE: [],
+            ChessColor.BLACK: []
+        }
+        self.en_passant = {}
+        self.halfmove = 0
+        self.fullmove = 0
+
+        self.fillBoardFEN(fen_notation)
 
         self.whiteStrikedList = []
         self.blackStrikedList = []
@@ -60,13 +83,9 @@ class Board:
 
         self.colorMove = ChessColor.WHITE
 
-        self.prevStart = None
-        self.prevStop = None
-        self.prevColor = None
-        self.moved_stack = []
-
-
-# ===================SHORT FUNCTIONS=======================
+# =================================================
+# ===================HELPERS=======================
+# =================================================
     def __getitem__(self, key):
         return self.board[key[0]][key[1]]
 
@@ -121,7 +140,6 @@ class Board:
         if self.colorMove == ChessColor.WHITE: self.colorMove = ChessColor.BLACK
         elif self.colorMove == ChessColor.BLACK: self.colorMove = ChessColor.WHITE
 
-    # FUNKCJA PRZELICZAJCA RUCH (np. 11 ---> B1)
     def moveRecalculation(self, cooridante):
             match cooridante[0].upper:
                 case 'A': return 0
@@ -133,33 +151,47 @@ class Board:
                 case 'G': return 6
                 case 'I': return 7
                 case _ : raise Exception("You put a wrong letter in chess coordinate!")
+# =================================================
+# =================================================
+# =================================================
 
+    def fillBoardFEN(self, fen : string) -> None:
+        """Fill the board with pieces according to the FEN notatnion string."""
+        parts = fen.split(" ")
+        if len(parts) != 6:
+            raise ValueError("Invalid FEN notation")
+        self.colorMove = ChessColor.WHITE if parts[1] == "w" else ChessColor.BLACK
+        for castling in parts[2]:
+            if castling == 'K':
+                self.castling[ChessColor.WHITE].append((7, 6))
+            elif castling == 'Q':
+                self.castling[ChessColor.WHITE].append((7, 2))
+            elif castling == 'k':
+                self.castling[ChessColor.BLACK].append((0, 6))
+            elif castling == 'q':
+                self.castling[ChessColor.BLACK].append((0, 2))
+        self.en_passant = self.moveRecalculation(parts[3]) if parts[3] != '-' else None
+        self.halfmove = int(parts[4])
+        self.fullmove = int(parts[5])
 
-# ======================LONG FUNCTIONS======================
-    def fillBoard(self):
-        color = None
-        for row in range(self.dimension[0]):
-            if row > 1 and row < 6:
-                continue
-            elif row <= 1:
-                color = self.upColor
-            elif row >= 6:
-                color = self.downColor
-
-            for col in range(self.dimension[1]):
-                if row == 0 or row == 7:
-                    if col == 0 or col == 7:
-                        self[(row, col)] = Rook(color)
-                    elif col == 1 or col == 6:
-                        self[(row, col)] = Knight(color)
-                    elif col == 2 or col == 5:
-                        self[(row, col)] = Bishop(color)
-                    elif col == 3:
-                        self[(row, col)] = Queen(color)
-                    elif col == 4:
-                        self[(row, col)] = King(color)
-                elif row == 1 or row == 6:
-                    self.setBoardCell((row, col), Pawn, color, self)
+        rows = parts[0].split("/")
+        for i, row in enumerate(rows):
+            j = 0
+            for char in row:
+                if char.isdigit():
+                    j += int(char)
+                elif char.isalpha():
+                    color = ChessColor.WHITE if char.isupper() else ChessColor.BLACK
+                    piece = None
+                    match char.lower():
+                        case 'k': piece = King(color)
+                        case 'q': piece = Queen(color)
+                        case 'r': piece = Rook(color)
+                        case 'n': piece = Knight(color)
+                        case 'b': piece = Bishop(color)
+                        case 'p': piece = Pawn(color, self)
+                    self[(i,j)] = piece
+                    j += 1
 
 #===================================
 
@@ -362,7 +394,7 @@ class Board:
 #===================================
 
     # ROSZADA
-    def castling(self, start, stop):
+    def do_castling(self, start, stop):
         if isinstance(self[start], King) and isinstance(self[stop], Rook):
             # up-left rokade
             if start == (0, 4) and stop == (0, 2) and self[(0,4)].unmoved is True and \
@@ -510,7 +542,7 @@ class Board:
                             print('ED1')
                             continue
 
-                        if self.castling((row, col), item):
+                        if self.do_castling((row, col), item):
                             moves.append(Move((row, col), item))
                         # PAWN CASES
                         elif isinstance(self[(row,col)], Pawn) and item[1] != col and self[item] != None and self[item].color != self.colorMove:
