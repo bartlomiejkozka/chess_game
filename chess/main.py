@@ -77,7 +77,7 @@ def playFirstPossibleMoves(depth, board, renderer=None, delay=0.5):
 
 
 def main():
-    Board1 = b.Board()
+    Board1 = b.Board(fen_notation="r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 0")
     # play(Board1, Board1.board)
     game = Render.Render(720 + 100, Board1)
     # game.render(Board1)

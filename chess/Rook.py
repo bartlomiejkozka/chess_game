@@ -5,7 +5,6 @@ class Rook:
         self.color = color
         self.isFlier = False
         self.directions = [ChessDirection.VERTICAL, ChessDirection.HORIZONTAL]
-        self.unmoved = True
 
 
     def validMove(self, start, dim):
