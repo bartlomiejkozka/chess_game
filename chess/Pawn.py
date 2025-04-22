@@ -1,4 +1,4 @@
-from chess.Board import ChessDirection, ChessColor, Move
+from chess.common import ChessDirection, ChessColor, Move
 
 class Pawn:
     def __init__(self, color):

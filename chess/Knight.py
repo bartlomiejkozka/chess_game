@@ -1,4 +1,3 @@
-
 class Knight:
     def __init__(self, color):
         self.color = color
@@ -20,18 +19,5 @@ class Knight:
                     moves.append((start[0] + 1, start[1] + cols))
                 if 0 <= start[0] - 1 < dim[0]:
                     moves.append((start[0] - 1, start[1] + cols))
-        # # one cell forward first
-        # for row in [-1, 1]:
-        #     if 0 <= start[0] + row < dim[0]:
-        #         if 0 <= start[1] + 2 < dim[0]:
-        #             moves.append((start[0] + row, start[1] + 2))
-        #         if 0 <= start[1] - 2 < dim[0]:
-        #             moves.append((start[0] + row, start[1] - 2))
-        # for col in [-1, 1]:
-        #     if 0 <= start[1] + col < dim[0]:
-        #         if 0 <= start[0] + 2 < dim[0]:
-        #             moves.append((start[0] + 2, start[1] + col))
-        #         if 0 <= start[0] - 2 < dim[0]:
-        #             moves.append((start[0] - 2, start[1] + col))
-
         return moves
+    

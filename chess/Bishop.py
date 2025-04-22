@@ -1,4 +1,4 @@
-from chess.Board import ChessDirection
+from chess.common import ChessDirection
 
 class Bishop:
     def __init__(self, color):
@@ -26,3 +26,4 @@ class Bishop:
                 moves.append((start[0] + x, start[1] + x))
 
         return moves
+    

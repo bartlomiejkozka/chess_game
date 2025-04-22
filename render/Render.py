@@ -1,14 +1,13 @@
-import Board
 import pygame
 import string
 
-from King import King
-from Queen import Queen
-from Rook import Rook
-from Knight import Knight
-from Bishop import Bishop
-from Pawn import Pawn
-from Board import ChessColor
+from chess.King import King
+from chess.Queen import Queen
+from chess.Rook import Rook
+from chess.Knight import Knight
+from chess.Bishop import Bishop
+from chess.Pawn import Pawn
+from chess.Board import ChessColor
 
 
 class Render:

@@ -1,4 +1,3 @@
-
 class King:
     def __init__(self, color):
         self.color = color
@@ -20,4 +19,3 @@ class King:
             moves.extend([(7, 2), (7, 6)])
 
         return moves
-
