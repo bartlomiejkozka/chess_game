@@ -1,4 +1,4 @@
-from Board import ChessDirection
+from chess.Board import ChessDirection
 
 class Bishop:
     def __init__(self, color):

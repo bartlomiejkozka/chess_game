@@ -31,12 +31,12 @@ class Move:
         return f"Move({self.src}, {self.dst})"
 
 
-from King import King
-from Queen import Queen
-from Knight import Knight
-from Rook import Rook
-from Bishop import Bishop
-from Pawn import Pawn
+from chess.King import King
+from chess.Queen import Queen
+from chess.Knight import Knight
+from chess.Rook import Rook
+from chess.Bishop import Bishop
+from chess. Pawn import Pawn
 
 
 class Board:
@@ -89,9 +89,9 @@ class Board:
         self.blackPoints = 0
         self.parameters = {
             "nodes": 0,
-            "captured": 0,
-            "check": 0,
-            "checkmate": 0,
+            "captures": 0,
+            "checks": 0,
+            "checkmates": 0,
             "E.p": 0,
             "castles": 0,
             "promotion": 0,
@@ -149,7 +149,7 @@ class Board:
         elif self[stop].color is ChessColor.BLACK:
             self.whiteStrikedList.append(name)
             self.whitePoints += self.matchPoints(name)
-        self.parameters["captured"] += 1
+        self.parameters["captures"] += 1
         
     def deleteStirked(self, colorMove):
         if colorMove == ChessColor.WHITE: self.whiteStrikedList.pop()
@@ -232,15 +232,16 @@ class Board:
         if len(parts) != 6:
             raise ValueError("Invalid FEN notation")
         self.colorMove = ChessColor.WHITE if parts[1] == "w" else ChessColor.BLACK
-        for castling in parts[2]:
-            if castling == 'K':
-                self.castling[ChessColor.WHITE].append((7, 6))
-            elif castling == 'Q':
-                self.castling[ChessColor.WHITE].append((7, 2))
-            elif castling == 'k':
-                self.castling[ChessColor.BLACK].append((0, 6))
-            elif castling == 'q':
-                self.castling[ChessColor.BLACK].append((0, 2))
+        if parts[2] != "-":
+            for castling in parts[2]:
+                if castling == 'K':
+                    self.castling[ChessColor.WHITE].append((7, 6))
+                elif castling == 'Q':
+                    self.castling[ChessColor.WHITE].append((7, 2))
+                elif castling == 'k':
+                    self.castling[ChessColor.BLACK].append((0, 6))
+                elif castling == 'q':
+                    self.castling[ChessColor.BLACK].append((0, 2))
         self.en_passant[self.oppositeColor()] = self.FromLetter(parts[3]) if parts[3] != '-' else None
         self.halfmove = int(parts[4])
         self.fullmove = int(parts[5])
@@ -271,9 +272,9 @@ class Board:
         isMoved = False
         self.clearEnPassant()
         if self.isCheck(self.getkingPosition(self.colorMove))[0]:
-            self.parameters["check"] += 1
+            self.parameters["checks"] += 1
             if self.isCheckMate(self.getkingPosition(self.colorMove)):
-                self.parameters["checkmate"] += 1
+                self.parameters["checkmates"] += 1
                 print("Checkmate")
                 return isMoved
 
@@ -524,7 +525,7 @@ class Board:
 
                         if isinstance(self[(row,col)], King) and (row,col) in [(0, 4), (7, 4)] and item in [(0, 6), (7, 6), (0, 2), (7, 2)]:
                             if self.isCastling((row, col), item):
-                                # print("YES CASTLING", (row, col), item, self[(row,col)])
+                                self.parameters["castles"] += 1
                                 moves.append(Move((row, col), item))
                         # PAWN CASES
                         elif isinstance(self[(row,col)], Pawn):

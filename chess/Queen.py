@@ -1,4 +1,4 @@
-from Board import ChessDirection
+from chess.Board import ChessDirection
 
 class Queen:
     def __init__(self, color):
