@@ -50,39 +50,43 @@ def play(board, boardList):
         printChessBoard(boardList)
 
 
+def printMoves(moves, board):
+    for move in moves:
+        print(f"{board.FromNumber(move.src)}{board.FromNumber(move.dst)}", end=", ")
+    print()
+
+
 def playFirstPossibleMoves(depth, board, renderer=None, delay=0.5):
     if depth == 0: 
         return 1
     
     moves = board.legal_moves()
-    for move in moves:
-        print([move.src, move.dst], end=";")
-    numPosittions = 0
+    numPositions = 0
 
     for move in moves:
-        print(move.src, move.dst)
-        print(board.colorMove)
+        board.move(move.src, move.dst)
 
-        res = board.move(move.src, move.dst)
-        print(res)
+        if depth == 2:
+            # Dla każdego ruchu białych — liczymy liczbę odpowiedzi czarnych
+            childPositions = playFirstPossibleMoves(depth - 1, board, renderer, delay)
+            print(f"{board.FromNumber(move.src)}{board.FromNumber(move.dst)}: {childPositions}")
+            numPositions += childPositions
+        else:
+            numPositions += playFirstPossibleMoves(depth - 1, board, renderer, delay)
 
-        renderer.render2(board)
-        time.sleep(delay)
-
-        numPosittions += playFirstPossibleMoves(depth-1, board, renderer, delay)
         board.undoMove()
 
-
-    return numPosittions
+    return numPositions
 
 
 def main():
-    Board1 = b.Board(fen_notation="r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 0")
+    Board1 = b.Board(fen_notation="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     # play(Board1, Board1.board)
-    game = Render.Render(720 + 100, Board1)
+    # game = Render.Render(720 + 100, Board1)
     # game.render(Board1)
-    numPositions = playFirstPossibleMoves(2, Board1, game, 0.01)
+    numPositions = playFirstPossibleMoves(2, Board1, delay=0.01)
     print(f"Num positions: {numPositions}")
+    print(Board1.parameters["nodes"])
 
 
 if __name__ == "__main__":

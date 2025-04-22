@@ -49,6 +49,7 @@ class Board:
     halfmove: int
     fullmove: int
     moved_stack: list[dict[str, object]]
+    parameters: dict[str, int]
 
     def __init__(self, random_color_pos: bool = False, fen_notation: string = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") -> None:
         self.dimension = (8,8)
@@ -86,9 +87,17 @@ class Board:
         self.blackStrikedList = []
         self.whitePoints = 0
         self.blackPoints = 0
+        self.parameters = {
+            "nodes": 0,
+            "captured": 0,
+            "check": 0,
+            "checkmate": 0,
+            "E.p": 0,
+            "castles": 0,
+            "promotion": 0,
+        }
 
-        self.colorMove = ChessColor.WHITE
-
+        
 # =================================================
 # ===================HELPERS=======================
 # =================================================
@@ -110,7 +119,8 @@ class Board:
         return self[tuplePos] == None
 
     def isStrike(self, stop, color):
-        return self[stop] != None and self[stop].color != color
+        return (self[stop] != None and self[stop].color != color) or \
+                (self[stop] == None and self.en_passant[self.oppositeColor()] == stop)
 
     def isCollision(self, stop, color):
         return self[stop] != None and self[stop].color == color
@@ -124,6 +134,14 @@ class Board:
             case 'Queen':  return 9
 
     def addSriked(self, stop):
+        if self[stop] == None:
+            print(self.en_passant)
+            self.parameters["E.p"] += 1
+            if self.colorMove == ChessColor.WHITE:
+                stop = (stop[0] + 1, stop[1])
+            elif self.colorMove == ChessColor.BLACK:
+                stop = (stop[0] - 1, stop[1])
+
         name = type(self[stop]).__name__
         if self[stop].color is ChessColor.WHITE:
             self.blackStrikedList.append(name)
@@ -131,7 +149,8 @@ class Board:
         elif self[stop].color is ChessColor.BLACK:
             self.whiteStrikedList.append(name)
             self.whitePoints += self.matchPoints(name)
-
+        self.parameters["captured"] += 1
+        
     def deleteStirked(self, colorMove):
         if colorMove == ChessColor.WHITE: self.whiteStrikedList.pop()
         else: self.blackStrikedList.pop()
@@ -146,23 +165,50 @@ class Board:
         if self.colorMove == ChessColor.WHITE: self.colorMove = ChessColor.BLACK
         elif self.colorMove == ChessColor.BLACK: self.colorMove = ChessColor.WHITE
 
-    def moveRecalculation(self, cooridante):
-            match cooridante[0].upper:
-                case 'A': return 0
-                case 'B': return 1
-                case 'C': return 2
-                case 'D': return 3
-                case 'E': return 4
-                case 'F': return 5
-                case 'G': return 6
-                case 'I': return 7
+    def FromLetter(self, pos: string) -> tuple[int, int]:
+            row = 0
+            match pos[0].upper:
+                case 'A': row = 0
+                case 'B': row = 1
+                case 'C': row = 2
+                case 'D': row = 3
+                case 'E': row = 4
+                case 'F': row = 5
+                case 'G': row = 6
+                case 'I': row = 7
                 case _ : raise Exception("You put a wrong letter in chess coordinate!")
+            return (int(pos[1]), row)
+    
+    def FromNumber(self, pos: tuple[int, int]) -> string:
+            col = 0
+            row = 0
+            match pos[1]:
+                case 0: col = 'a'
+                case 1: col = 'b'
+                case 2: col = 'c'
+                case 3: col = 'd'
+                case 4: col = 'e'
+                case 5: col = 'f'
+                case 6: col = 'g'
+                case 7: col = 'h'
+                case _ : raise Exception("You put a wrong letter in chess coordinate!")
+            match pos[0]:
+                case 0: row = 8
+                case 1: row = 7
+                case 2: row = 6
+                case 3: row = 5
+                case 4: row = 4
+                case 5: row = 3
+                case 6: row = 2
+                case 7: row = 1
+                case _ : raise Exception("You put a wrong letter in chess coordinate!")
+            return col + str(row)
 
     def enPassant(self, start, stop):
         if stop[0] == start[0] + 2:
-            self.en_passant[self.colorMove] = (stop[0] + 1, stop[1])
-        elif stop[0] == start[0] - 2:
             self.en_passant[self.colorMove] = (stop[0] - 1, stop[1])
+        elif stop[0] == start[0] - 2:
+            self.en_passant[self.colorMove] = (stop[0] + 1, stop[1])
         else:
             pass
 
@@ -195,7 +241,7 @@ class Board:
                 self.castling[ChessColor.BLACK].append((0, 6))
             elif castling == 'q':
                 self.castling[ChessColor.BLACK].append((0, 2))
-        self.en_passant[self.oppositeColor()] = self.moveRecalculation(parts[3]) if parts[3] != '-' else None
+        self.en_passant[self.oppositeColor()] = self.FromLetter(parts[3]) if parts[3] != '-' else None
         self.halfmove = int(parts[4])
         self.fullmove = int(parts[5])
 
@@ -221,10 +267,15 @@ class Board:
 #===================================
 
     def move(self, start, stop) -> bool:
-        if self.isCheckMate(self.getkingPosition(self.colorMove)):
-            raise Exception("GAME OVER!!!!!!!!!!!!!!!!!")
+
         isMoved = False
         self.clearEnPassant()
+        if self.isCheck(self.getkingPosition(self.colorMove))[0]:
+            self.parameters["check"] += 1
+            if self.isCheckMate(self.getkingPosition(self.colorMove)):
+                self.parameters["checkmate"] += 1
+                print("Checkmate")
+                return isMoved
 
         piece_moved = self[start]
         piece_captured = self[stop]
@@ -232,8 +283,7 @@ class Board:
         if Move(start, stop) in self.legal_moves():
             isMoved = True
         else:
-            print(self.legal_moves())
-            print("Illegal move")
+            print("Illegal move", f"{self.FromNumber(start)}{self.FromNumber(stop)}")
             return isMoved
 
         self.moved_stack.append({
@@ -242,7 +292,8 @@ class Board:
             "piece_moved": piece_moved,
             "piece_captured": piece_captured,
             "color": self.colorMove,
-            "unmoved": getattr(piece_moved, 'unmoved', None)
+            "unmoved": getattr(piece_moved, 'unmoved', None),
+            "castling": self.castling[self.colorMove]
         })
 
         if self.isStrike(stop, piece_moved.color):
@@ -255,12 +306,13 @@ class Board:
             self.halfmove = 0
 
         elif isinstance(piece_moved, Rook) or isinstance(piece_moved, King):
-            self.castling[self.colorMove].remove(stop) if stop in self.castling[self.colorMove] else None
+            self.castling[self.colorMove].clear()
         else: 
             pass
 
         self[start] = None
         self[stop] = piece_moved
+        self.parameters["nodes"] += 1
         self.halfmove += 1
         self.fullmove += 1 if self.colorMove == ChessColor.BLACK else 0
         self.changeColor()
@@ -331,13 +383,14 @@ class Board:
     def undoMove(self) -> None:
         """Undo the last move made on the board."""
         if not self.moved_stack:
-            print("No moves to undo")
+            # print("No moves to undo")
             return
 
         last_move = self.moved_stack.pop()
 
         self[last_move["src"]] = last_move["piece_moved"]
         self[last_move["dst"]] = last_move["piece_captured"]
+        self.castling[self.oppositeColor()] = last_move["castling"]      
 
         if hasattr(self[last_move["src"]], "unmoved"):
             self[last_move["src"]].unmoved = last_move["unmoved"]
@@ -350,17 +403,23 @@ class Board:
         isCastling = False
         if not isinstance(self[start], King):
             return isCastling
+        if stop not in self.castling[self.colorMove]:
+            return isCastling
         
         for castling in self.castling[self.colorMove]:
-            if castling[1] < start[1]:
-                if all([(self.isEmptyCell(square) and self.isCheck(square)) for square in [(start[0], i) for i in range(start[1]-1, castling[1]+2, -1)]]):
-                    isCastling = True
-            elif castling[1] > start[1]:
-                if all([(self.isEmptyCell(square) and self.isCheck(square)) for square in [(start[0], i) for i in range(start[1]+1, castling[1]+2)]]):
-                    isCastling = True
+            if stop == castling:
+                if castling[1] < start[1]:
+                    temp = [(self.isEmptyCell(square) and not self.isCheck(square)[0]) for square in [(start[0], i) for i in range(start[1]-1, castling[1]-2, -1)]]
+                    # print(start, castling, temp)
+                    if all([(self.isEmptyCell(square) and not self.isCheck(square)[0]) for square in [(start[0], i) for i in range(start[1]-1, castling[1]-2, -1)]]):
+                        isCastling = True
+                elif castling[1] > start[1]:
+                    temp = [(self.isEmptyCell(square) and not self.isCheck(square)[0]) for square in [(start[0], i) for i in range(start[1]+1, castling[1]+1)]]
+                    # print(start, castling, temp)
+                    if all([(self.isEmptyCell(square) and not self.isCheck(square)[0]) for square in [(start[0], i) for i in range(start[1]+1, castling[1]+1)]]):
+                        isCastling = True
             else:
-                # already handled
-                pass 
+                continue
 
         return isCastling
 
@@ -463,8 +522,10 @@ class Board:
                         if self.isCheckAfterMove((row, col), item):
                             continue
 
-                        if self.isCastling((row, col), item):
-                            moves.append(Move((row, col), item))
+                        if isinstance(self[(row,col)], King) and (row,col) in [(0, 4), (7, 4)] and item in [(0, 6), (7, 6), (0, 2), (7, 2)]:
+                            if self.isCastling((row, col), item):
+                                # print("YES CASTLING", (row, col), item, self[(row,col)])
+                                moves.append(Move((row, col), item))
                         # PAWN CASES
                         elif isinstance(self[(row,col)], Pawn):
                             if item[1] != col:
@@ -478,7 +539,7 @@ class Board:
                         elif not self[(row,col)].isFlier and not isinstance(self[(row,col)], King):
                             if not self.isObsctacleBetween((row,col), item, self[(row,col)].directions) and not self.isCollision(item, self[(row,col)].color):
                                 moves.append(Move((row, col), item))
-                        elif isinstance((row, col), King) or isinstance(self[(row,col)], Knight) and not self.isCollision(item, self[(row,col)].color):
+                        elif (isinstance(self[(row, col)], King) or isinstance(self[(row,col)], Knight)) and not self.isCollision(item, self[(row,col)].color):
                             moves.append(Move((row, col), item))
                         else:
                             pass

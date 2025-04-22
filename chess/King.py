@@ -14,5 +14,10 @@ class King:
                         continue
                     if 0 <= start[1] + col < dim[1]:
                         moves.append((start[0] + row, start[1] + col))
+        if start == (0, 4):
+            moves.extend([(0, 2), (0, 6)])
+        if start == (7, 4):
+            moves.extend([(7, 2), (7, 6)])
+
         return moves
 
