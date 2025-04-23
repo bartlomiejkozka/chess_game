@@ -89,9 +89,9 @@ class Board:
     def isEmptyCell(self, tuplePos):
         return self[tuplePos] == None
 
-    def isStrike(self, stop, color):
+    def isStrike(self, start, stop, color):
         return (self[stop] != None and self[stop].color != color) or \
-                (self[stop] == None and self.en_passant[self.oppositeColor()] == stop)
+                (self[stop] == None and self.en_passant[self.oppositeColor()] == stop and isinstance(self[start], Pawn))
 
     def isCollision(self, stop, color):
         return self[stop] != None and self[stop].color == color
@@ -243,7 +243,6 @@ class Board:
         isMoved = False
         self.clearEnPassant()
         if self.isCheck(self.getkingPosition(self.colorMove))[0]:
-            self.parameters["checks"] += 1
             if self.isCheckMate(self.getkingPosition(self.colorMove)):
                 self.parameters["checkmates"] += 1
                 print("Checkmate")
@@ -258,6 +257,7 @@ class Board:
             print("Illegal move", f"{self.FromNumber(start)}{self.FromNumber(stop)}")
             return isMoved
 
+        temp = self.castling[self.colorMove].copy()
         self.moved_stack.append({
             "src": start,
             "dst": stop,
@@ -265,10 +265,10 @@ class Board:
             "piece_captured": piece_captured,
             "color": self.colorMove,
             "unmoved": getattr(piece_moved, 'unmoved', None),
-            "castling": self.castling[self.colorMove]
+            "castling": temp
         })
 
-        if self.isStrike(stop, piece_moved.color):
+        if self.isStrike(start, stop, piece_moved.color):
             self.addSriked(stop)
             self.halfmove = 0
 
@@ -277,10 +277,10 @@ class Board:
             self.enPassant(start, stop)
             self.halfmove = 0
 
-        elif isinstance(piece_moved, Rook) or isinstance(piece_moved, King):
+        if self.isCastling(start, stop):
+            self.parameters["castles"] += 1
+        if isinstance(piece_moved, Rook) or isinstance(piece_moved, King):
             self.castling[self.colorMove].clear()
-        else: 
-            pass
 
         self[start] = None
         self[stop] = piece_moved
@@ -288,6 +288,11 @@ class Board:
         self.halfmove += 1
         self.fullmove += 1 if self.colorMove == ChessColor.BLACK else 0
         self.changeColor()
+        if self.isCheck(self.getkingPosition(self.colorMove))[0]:
+            self.parameters["checks"] += 1
+            # print(self.isCheck(self.getkingPosition(self.colorMove))[1])
+            # print(self[self.isCheck(self.getkingPosition(self.colorMove))[1]])
+            # print(self.getkingPosition(self.colorMove))
 
         return isMoved
 
@@ -381,13 +386,9 @@ class Board:
         for castling in self.castling[self.colorMove]:
             if stop == castling:
                 if castling[1] < start[1]:
-                    temp = [(self.isEmptyCell(square) and not self.isCheck(square)[0]) for square in [(start[0], i) for i in range(start[1]-1, castling[1]-2, -1)]]
-                    # print(start, castling, temp)
-                    if all([(self.isEmptyCell(square) and not self.isCheck(square)[0]) for square in [(start[0], i) for i in range(start[1]-1, castling[1]-2, -1)]]):
+                    if all([(self.isEmptyCell(square) and not self.isCheck(square)[0]) for square in [(start[0], i) for i in range(start[1]-1, castling[1]-1, -1)]]):
                         isCastling = True
                 elif castling[1] > start[1]:
-                    temp = [(self.isEmptyCell(square) and not self.isCheck(square)[0]) for square in [(start[0], i) for i in range(start[1]+1, castling[1]+1)]]
-                    # print(start, castling, temp)
                     if all([(self.isEmptyCell(square) and not self.isCheck(square)[0]) for square in [(start[0], i) for i in range(start[1]+1, castling[1]+1)]]):
                         isCastling = True
             else:
@@ -407,7 +408,7 @@ class Board:
                             return [True, (row, col)]
                     # PAWN
                     elif isinstance(self[(row,col)], Pawn):
-                        if Move((row,col), checkPos) in self[(row,col)].validMove((row, col), self.dimension):
+                        if Move((row,col), checkPos) in self[(row,col)].validMove((row, col), self.dimension) and col != checkPos[1]:
                             return [True, (row, col)]
                     # REST
                     elif checkPos in self[(row,col)].validMove((row, col), self.dimension):
@@ -496,7 +497,6 @@ class Board:
 
                         if isinstance(self[(row,col)], King) and (row,col) in [(0, 4), (7, 4)] and item in [(0, 6), (7, 6), (0, 2), (7, 2)]:
                             if self.isCastling((row, col), item):
-                                self.parameters["castles"] += 1
                                 moves.append(Move((row, col), item))
                         # PAWN CASES
                         elif isinstance(self[(row,col)], Pawn):

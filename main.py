@@ -28,6 +28,7 @@ def playFirstPossibleMoves(depth, board, renderer=None, delay=0.5):
             numPositions += childPositions
         else:
             numPositions += playFirstPossibleMoves(depth - 1, board, renderer, delay)
+            print(f"{board.FromNumber(move.src)}{board.FromNumber(move.dst)}")
 
         board.undoMove()
 
@@ -35,13 +36,13 @@ def playFirstPossibleMoves(depth, board, renderer=None, delay=0.5):
 
 
 def main():
-    Board1 = Board(fen_notation="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    Board1 = Board(fen_notation="8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1")
     # play(Board1, Board1.board)
     # game = Render.Render(720 + 100, Board1)
     # game.render(Board1)
     numPositions = playFirstPossibleMoves(2, Board1, delay=0.01)
     print(f"Num positions: {numPositions}")
-    print(Board1.parameters["nodes"])
+    print(Board1.parameters["captures"])
 
 
 if __name__ == "__main__":

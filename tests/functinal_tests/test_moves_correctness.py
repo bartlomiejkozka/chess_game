@@ -25,9 +25,9 @@ class Position2(Enum):
     CHECKMATES = {1: 0, 2: 0}
 class Position3(Enum):
     FEN = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1"
-    NODES = {1: 14, 2: 191}
+    NODES = {1: 14, 2: 193}
     CAPUTERS = {1: 1, 2: 14}
-    E_P = {1: 0, 2: 0}
+    E_P = {1: 0, 2: 2}
     CASTLES = {1: 0, 2: 0}
     PROMOTIONS = {1: 0, 2: 0}
     CHECKS = {1: 2, 2: 10}
@@ -56,31 +56,47 @@ class TestChessMoves:
         board = Board(fen_notation=InitialPosition.FEN.value)
         assert playMoves(1, board) == InitialPosition.NODES.value[1]
         assert playMoves(2, board) == InitialPosition.NODES.value[2]
-        assert board.parameters["captures"] == InitialPosition.CAPUTERS.value[1]
-        assert board.parameters["E.p"] == InitialPosition.E_P.value[1]
-        assert board.parameters["castles"] == InitialPosition.CASTLES.value[1]
+        assert board.parameters["captures"] == InitialPosition.CAPUTERS.value[2]
+        assert board.parameters["E.p"] == InitialPosition.E_P.value[2]
+        assert board.parameters["castles"] == InitialPosition.CASTLES.value[2]
         # assert board.parameters["promotions"] == InitialPosition.PROMOTIONS.value[1]
-        assert board.parameters["checks"] == InitialPosition.CHECKS.value[1]
-        assert board.parameters["checkmates"] == InitialPosition.CHECKMATES.value[1]
+        assert board.parameters["checks"] == InitialPosition.CHECKS.value[2]
+        assert board.parameters["checkmates"] == InitialPosition.CHECKMATES.value[2]
 
     def test_position_2(self):
-        board = Board(fen_notation=Position2.FEN.value)
-        assert playMoves(1, board) == Position2.NODES.value[1]
-        assert playMoves(2, board) == Position2.NODES.value[2]
-        assert board.parameters["captures"] == Position2.CAPUTERS.value[1]
-        assert board.parameters["E.p"] == Position2.E_P.value[1]
-        assert board.parameters["castles"] == Position2.CASTLES.value[1]
-        # assert board.parameters["promotions"] == Position2.PROMOTIONS.value[1]
-        assert board.parameters["checks"] == Position2.CHECKS.value[1]
-        assert board.parameters["checkmates"] == Position2.CHECKMATES.value[1]
+        castles = 0
+        captures = 0
+        for i in range(1, 3):
+            board = Board(fen_notation=Position2.FEN.value)
+            assert playMoves(i, board) == Position2.NODES.value[i]
+            temp = board.parameters["captures"] - captures
+            assert temp == Position2.CAPUTERS.value[i]
+            assert board.parameters["E.p"] == Position2.E_P.value[i]
+            temp = board.parameters["castles"] - castles
+            assert temp == Position2.CASTLES.value[i]
+            # assert board.parameters["promotions"] == Position2.PROMOTIONS.value[i]
+            assert board.parameters["checks"] == Position2.CHECKS.value[i]
+            assert board.parameters["checkmates"] == Position2.CHECKMATES.value[i]
+            castles = board.parameters["castles"]
+            captures = board.parameters["captures"]
 
     def test_position_3(self):
-        board = Board(fen_notation=Position3.FEN.value)
-        assert playMoves(1, board) == Position3.NODES.value[1]
-        assert playMoves(2, board) == Position3.NODES.value[2]
-        assert board.parameters["captures"] == Position3.CAPUTERS.value[1]
-        assert board.parameters["E.p"] == Position3.E_P.value[1]
-        assert board.parameters["castles"] == Position3.CASTLES.value[1]
-        # assert board.parameters["promotions"] == Position3.PROMOTIONS.value[1]
-        assert board.parameters["checks"] == Position3.CHECKS.value[1]
-        assert board.parameters["checkmates"] == Position3.CHECKMATES.value[1]
+        castles = 0
+        captures = 0
+        checks = 0
+        for i in range(1, 3):
+            board = Board(fen_notation=Position3.FEN.value)
+            assert playMoves(i, board) == Position3.NODES.value[i]
+            temp = board.parameters["captures"] - captures - board.parameters["E.p"] 
+            assert temp == Position3.CAPUTERS.value[i]
+            assert board.parameters["E.p"] == Position3.E_P.value[i]
+            temp = board.parameters["castles"] - castles
+            assert temp == Position3.CASTLES.value[i]
+            # assert board.parameters["promotions"] == Position2.PROMOTIONS.value[i]
+            temp = board.parameters["checks"] - checks
+            assert temp == Position3.CHECKS.value[i]
+            assert board.parameters["checkmates"] == Position3.CHECKMATES.value[i]
+            castles = board.parameters["castles"]
+            captures = board.parameters["captures"]
+            checks = board.parameters["checks"]
+
